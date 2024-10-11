@@ -14,7 +14,7 @@ while true; do
     # Check if Proxmox server is connected to AC power
     ac_power=$(cat /sys/class/power_supply/ADP1/online)
 
-    # Check battery level if not connected to AC power
+    # Check battery level only if not connected to AC power
     if [ "$ac_power" -eq 0 ]; then
         battery_level=$(cat /sys/class/power_supply/BAT1/capacity)
 

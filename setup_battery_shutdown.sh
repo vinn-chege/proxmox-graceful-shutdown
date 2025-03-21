@@ -1,36 +1,46 @@
 #!/bin/bash
 
-# Define the script path
+# Define paths
 SCRIPT_PATH="/usr/local/bin/battery_shutdown.sh"
-
-# Define the service file path
 SERVICE_FILE="/etc/systemd/system/battery_shutdown.service"
 
-# Create the script file
+# Create the battery monitoring script
 cat << 'EOF' > $SCRIPT_PATH
 #!/bin/bash
 
+# Paths for power supply info
+AC_PATH="/sys/class/power_supply/ADP1/online"
+BAT_PATH="/sys/class/power_supply/BAT1/capacity"
+
 while true; do
-    # Check if Proxmox server is connected to AC power
-    ac_power=$(cat /sys/class/power_supply/ADP1/online)
-
-    # Check battery level only if not connected to AC power
-    if [ "$ac_power" -eq 0 ]; then
-        battery_level=$(cat /sys/class/power_supply/BAT1/capacity)
-
-        # Check if battery level is below 25%
-        if [ "$battery_level" -lt 25 ]; then
-            # Shutdown gracefully
-            echo "Battery level is below 25% and AC power is not connected. Initiating graceful shutdown..."
-            shutdown -h now
-        else
-            echo "Battery level is above 25%. No action required."
-        fi
+    # Check if AC power file exists
+    if [ -f "$AC_PATH" ]; then
+        ac_power=$(cat "$AC_PATH")
     else
-        echo "AC power is connected. No action required."
+        echo "AC power status file not found!"
+        ac_power=1  # Assume AC is connected to avoid false shutdowns
     fi
 
-    # Wait for a period of time before checking again (e.g., 1 minute)
+    # If AC power is disconnected
+    if [ "$ac_power" -eq 0 ]; then
+        if [ -f "$BAT_PATH" ]; then
+            battery_level=$(cat "$BAT_PATH")
+
+            # Shutdown if battery is below 25%
+            if [ "$battery_level" -lt 25 ]; then
+                echo "Battery low ($battery_level%). Initiating shutdown..."
+                shutdown -h now
+            else
+                echo "Battery OK ($battery_level%). No shutdown."
+            fi
+        else
+            echo "Battery capacity file not found!"
+        fi
+    else
+        echo "AC power connected. No action required."
+    fi
+
+    # Wait for a period before checking again
     sleep 60
 done
 EOF
@@ -39,14 +49,14 @@ EOF
 chmod +x $SCRIPT_PATH
 
 # Create the systemd service file
-cat << 'EOF' > $SERVICE_FILE
+cat << EOF > $SERVICE_FILE
 [Unit]
 Description=Battery Shutdown Monitor Service
-After=network.target
+After=multi-user.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/battery_shutdown.sh
+ExecStart=$SCRIPT_PATH
 Restart=always
 RestartSec=60
 

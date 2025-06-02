@@ -27,7 +27,7 @@ while true; do
             battery_level=$(cat "$BAT_PATH")
 
             # Shutdown if battery is below 25%
-            if [ "$battery_level" -lt 25 ]; then
+            if [ "$battery_level" -lt 10 ]; then
                 echo "Battery low ($battery_level%). Initiating shutdown..."
                 shutdown -h now
             else

@@ -1,6 +1,6 @@
 # Battery Shutdown Monitor Service
 
-This repository contains a script that sets up a service to monitor the battery level on a Proxmox server and perform a graceful shutdown if the battery level falls below 25% and AC power is not connected.
+This repository contains a script that sets up a service to monitor the battery level on a Proxmox server and perform a graceful shutdown if the battery level falls below 10% and AC power is not connected.
 
 ## Installation
 
